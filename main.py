@@ -32,20 +32,39 @@ start_button_rect = start_button_img.get_rect(center=(WIDTH / 2, 600))
 title_font = pygame.font.SysFont("comicsans", 60)
 title_text = title_font.render("Space Invaders", 1, (0,0,0))
 class Laser:
-    def __init__(self, x, y, img):
+    def __init__(self, x, y, img, speed):
         self.x = x
         self.y = y
         self.img = img
+        self.speed = speed
+        self.target = None
         self.mask = pygame.mask.from_surface(self.img)
+
     def draw(self, window):
         window.blit(self.img, (self.x, self.y))
 
-    def move(self, vel):
+    def set_target(self, target):
+        self.target = target
+
+    def movebot(self, vel):
         self.y += vel
 
-    def off_screen(self, height):
-        return not(self.y <= height and self.y >= 0)
+    def move(self):
+        if self.target is not None:
+            direction = [target - pos for pos, target in zip([self.x+42, self.y+36], self.target)]
+            magnitude = max(1, sum(d ** 2 for d in direction) ** 0.5)
+            direction = [d / magnitude for d in direction]
+            self.x += self.speed * direction[0]
+            self.y += self.speed * direction[1]
+        else:
+            self.y -= self.speed
 
+    def off_screen(self, width, height):
+        return not (0 <= self.x <= width and 0 <= self.y <= height)
+
+    def is_at_target(self):
+        return self.target is not None and all(
+            abs(pos - target) < self.speed for pos, target in zip([self.x, self.y], self.target))
     def collision(self, obj):
         return collide(self, obj)
 
@@ -70,8 +89,8 @@ class Ship:
     def move_lasers(self, vel, obj):
         self.cooldown()
         for laser in self.lasers:
-            laser.move(vel)
-            if laser.off_screen(HEIGHT):
+            laser.movebot(vel)
+            if laser.off_screen(WIDTH,HEIGHT):
                 self.lasers.remove(laser)
             elif laser.collision(obj):
                 obj.health -= 10
@@ -83,9 +102,9 @@ class Ship:
         elif self.cool_down_counter > 0:
             self.cool_down_counter += 1
 
-    def shoot(self):
+    def shoot(self, event):
         if self.cool_down_counter == 0:
-            laser = Laser(self.x, self.y, self.laser_img)
+            laser = Laser(self.x, self.y, self.laser_img, event, 7)
             self.lasers.append(laser)
             self.cool_down_counter = 1
 
@@ -106,8 +125,8 @@ class Player(Ship):
     def move_lasers(self, vel, objs):
         self.cooldown()
         for laser in self.lasers:
-            laser.move(vel)
-            if laser.off_screen(HEIGHT):
+            laser.move()
+            if laser.off_screen(WIDTH,HEIGHT):
                 self.lasers.remove(laser)
             else:
                 for obj in objs:
@@ -119,6 +138,15 @@ class Player(Ship):
     def draw(self, window):
         super().draw(window)
         self.healthbar(window)
+
+    def shoot(self, target):
+        if self.cool_down_counter == 0:
+            laser = Laser(*self.get_center(), self.laser_img, 10)
+            laser.set_target(target)
+            self.lasers.append(laser)
+            self.cool_down_counter = 1
+    def get_center(self):
+        return self.x + self.ship_img.get_width() // 2, self.y + self.ship_img.get_height() // 2
 
     def healthbar(self, window):
         pygame.draw.rect(window, (255,0,0), (self.x, self.y + self.ship_img.get_height() + 10, self.ship_img.get_width(), 10))
@@ -141,7 +169,7 @@ class Enemy(Ship):
 
     def shoot(self):
         if self.cool_down_counter == 0:
-            laser = Laser(self.x-20, self.y, self.laser_img)
+            laser = Laser(self.x-20, self.y, self.laser_img, 7)
             self.lasers.append(laser)
             self.cool_down_counter = 1
 
@@ -216,6 +244,12 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                player.shoot(event.pos)
+                #print(event.pos)
+
+        for laser in player.lasers:
+            laser.move()
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_a] and player.x - player_vel > 0: # left
@@ -226,16 +260,14 @@ def main():
             player.y -= player_vel
         if keys[pygame.K_s] and player.y + player_vel + player.get_height() + 15 < HEIGHT: # down
             player.y += player_vel
-        if keys[pygame.K_SPACE]:
-            player.shoot()
+        # if keys[pygame.K_SPACE]:
+        #     player.shoot()
 
         for enemy in enemies[:]:
             enemy.move(enemy_vel)
             enemy.move_lasers(laser_vel, player)
-
             if random.randrange(0, 2*60) == 1:
                 enemy.shoot()
-
             if collide(enemy, player):
                 player.health -= 10
                 enemies.remove(enemy)
