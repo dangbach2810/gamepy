@@ -5,23 +5,23 @@ import random
 
 pygame.font.init()
 
-WIDTH, HEIGHT = 750, 750
+WIDTH, HEIGHT = 600, 650
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Space Invaders")
 
 # Load images
-RED_SPACE_SHIP = pygame.image.load(os.path.join("assets", "pixel_ship_red_small.png"))
-GREEN_SPACE_SHIP = pygame.image.load(os.path.join("assets", "pixel_ship_green_small.png"))
-BLUE_SPACE_SHIP = pygame.image.load(os.path.join("assets", "pixel_ship_blue_small.png"))
+RED_SPACE_SHIP = pygame.image.load(os.path.join("assets", "enemy1.png"))
+GREEN_SPACE_SHIP = pygame.image.load(os.path.join("assets", "enemy2.png"))
+BLUE_SPACE_SHIP = pygame.image.load(os.path.join("assets", "enemy3.png"))
 
 # Player player
-YELLOW_SPACE_SHIP = pygame.image.load(os.path.join("assets", "pixel_ship_yellow.png"))
+YELLOW_SPACE_SHIP = pygame.image.load(os.path.join("assets", "tank_red.png"))
 
 # Lasers
-RED_LASER = pygame.image.load(os.path.join("assets", "pixel_laser_red.png"))
-GREEN_LASER = pygame.image.load(os.path.join("assets", "pixel_laser_green.png"))
-BLUE_LASER = pygame.image.load(os.path.join("assets", "pixel_laser_blue.png"))
-YELLOW_LASER = pygame.image.load(os.path.join("assets", "pixel_laser_yellow.png"))
+RED_LASER = pygame.image.load(os.path.join("assets", "laser_enemy.png"))
+GREEN_LASER = pygame.image.load(os.path.join("assets", "laser_enemy.png"))
+BLUE_LASER = pygame.image.load(os.path.join("assets", "laser_enemy.png"))
+YELLOW_LASER = pygame.image.load(os.path.join("assets", "pixel_laser_red.png"))
 
 # Background
 BG0 = pygame.transform.scale(pygame.image.load(os.path.join("assets", "bg.jpg")), (WIDTH, HEIGHT))
@@ -191,7 +191,7 @@ class Enemy(Ship):
 
     def shoot(self):
         if self.cool_down_counter == 0:
-            laser = Laser(self.x - 20, self.y, self.laser_img, 7)
+            laser = Laser(self.x + 25, self.y, self.laser_img, 7)
             self.lasers.append(laser)
             self.cool_down_counter = 1
 
