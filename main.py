@@ -51,13 +51,20 @@ class Laser:
 
     def move(self):
         if self.target is not None:
-            direction = [target - pos for pos, target in zip([self.x+42, self.y+36], self.target)]
+            direction = [target - pos for pos, target in zip([self.x + 42, self.y + 36], self.target)]
             magnitude = max(1, sum(d ** 2 for d in direction) ** 0.5)
             direction = [d / magnitude for d in direction]
+
             self.x += self.speed * direction[0]
             self.y += self.speed * direction[1]
+            if magnitude <= self.speed:
+                self.target = None
         else:
             self.y -= self.speed
+
+        if self.off_screen(WIDTH, HEIGHT) or self.x < 0 or self.x > WIDTH:
+            self.target = None
+        
 
     def off_screen(self, width, height):
         return not (0 <= self.x <= width and 0 <= self.y <= height)
@@ -95,7 +102,7 @@ class Ship:
             elif laser.collision(obj):
                 obj.health -= 10
                 self.lasers.remove(laser)
-
+            
     def cooldown(self):
         if self.cool_down_counter >= self.COOLDOWN:
             self.cool_down_counter = 0
@@ -134,6 +141,7 @@ class Player(Ship):
                         objs.remove(obj)
                         if laser in self.lasers:
                             self.lasers.remove(laser)
+                        
 
     def draw(self, window):
         super().draw(window)
@@ -141,10 +149,15 @@ class Player(Ship):
 
     def shoot(self, target):
         if self.cool_down_counter == 0:
-            laser = Laser(*self.get_center(), self.laser_img, 10)
+            # laser = Laser(*self.get_center(), self.laser_img, 10)
+            # laser.set_target(target)
+            # self.lasers.append(laser)
+            player_center = self.get_center()
+            laser = Laser(player_center[0], player_center[1], self.laser_img, 10)
             laser.set_target(target)
             self.lasers.append(laser)
             self.cool_down_counter = 1
+        
     def get_center(self):
         return self.x + self.ship_img.get_width() // 2, self.y + self.ship_img.get_height() // 2
 
@@ -246,7 +259,7 @@ def main():
                 quit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 player.shoot(event.pos)
-                #print(event.pos)
+                # print(event.pos)
 
         for laser in player.lasers:
             laser.move()
