@@ -21,7 +21,7 @@ YELLOW_SPACE_SHIP = pygame.image.load(os.path.join("assets", "tank_red.png"))
 RED_LASER = pygame.image.load(os.path.join("assets", "laser_enemy.png"))
 GREEN_LASER = pygame.image.load(os.path.join("assets", "laser_enemy.png"))
 BLUE_LASER = pygame.image.load(os.path.join("assets", "laser_enemy.png"))
-YELLOW_LASER = pygame.image.load(os.path.join("assets", "pixel_laser_red.png"))
+YELLOW_LASER = pygame.image.load(os.path.join("assets", "laser_red.png"))
 
 # Background
 BG0 = pygame.transform.scale(pygame.image.load(os.path.join("assets", "bg.jpg")), (WIDTH, HEIGHT))
