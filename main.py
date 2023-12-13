@@ -151,7 +151,8 @@ class Player(Ship):
                 for obj in objs:
                     if laser.collision(obj):
                         self.count += 1
-                        if self.count >= 2:
+                        if self.count >= 2 and self.level < 3:
+                            self.health = 200
                             self.level += 1
                             self.count = 0
                         objs.remove(obj)
@@ -169,7 +170,7 @@ class Player(Ship):
     def shoot(self, target):
         if self.cool_down_counter == 0:
             player_center = self.get_center()
-            laser = Laser(player_center[0], player_center[1], self.laser_img, 5)
+            laser = Laser(player_center[0], player_center[1], self.laser_img, 7)
             laser.set_target(target)
             self.lasers.append(laser)
             self.cool_down_counter = 1
