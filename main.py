@@ -31,6 +31,8 @@ BG1 = pygame.transform.scale(pygame.image.load(os.path.join("assets", "backgroun
 # Button
 start_button_img = pygame.image.load(os.path.join("assets", "btn.jpg"))
 start_button_rect = start_button_img.get_rect(center=(WIDTH / 2, 600))
+continue_button_img = pygame.image.load(os.path.join("assets", "btn_continue.png"))
+continue_button_rect = continue_button_img.get_rect(center=(WIDTH / 2, 500))
 # Font
 title_font = pygame.font.SysFont("comicsans", 60)
 title_text = title_font.render("Space Invaders", 1, (0, 0, 0))
@@ -67,6 +69,7 @@ class Laser:
             if magnitude <= self.speed:
                 self.target = None
         else:
+
             self.y -= self.speed
             if self.directionX > 0:
                 self.x += self.speed * self.direction[0]
@@ -215,10 +218,10 @@ def collide(obj1, obj2):
     return obj1.mask.overlap(obj2.mask, (offset_x, offset_y)) != None
 
 
-def main():
+def main(level, lives, health, player_level):
     run = True
     FPS = 60
-    level = 0
+    level = level -1
     lives = 5
     main_font = pygame.font.SysFont("comicsans", 50)
     lost_font = pygame.font.SysFont("comicsans", 60)
@@ -231,7 +234,8 @@ def main():
     laser_vel = 5
 
     player = Player(WIDTH/2, 520)
-
+    player.health = health
+    player.level = player_level
     clock = pygame.time.Clock()
 
     lost = False
@@ -282,6 +286,9 @@ def main():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                with open("data.txt", "w") as savelevel:
+                    savelevel.write(f"{level, lives, player.health, player.level}")
+                    savelevel.close()
                 quit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 player.shoot(event.pos)
@@ -318,19 +325,34 @@ def main():
 
 
 def main_menu():
-    title_rect = title_text.get_rect(center=(WIDTH / 2, 450))
+    title_rect = title_text.get_rect(center=(WIDTH / 2, 350))
     run = True
     while run:
-        # WIN.blit(BG0, (0, 0))
+        WIN.blit(BG0, (0, 0))
         WIN.blit(title_text, title_rect.topleft)
         WIN.blit(start_button_img, start_button_rect.topleft)
+        WIN.blit(continue_button_img, continue_button_rect.topleft)
         pygame.display.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-            # if event.type == pygame.MOUSEBUTTONDOWN:
-            #     if start_button_rect.collidepoint(event.pos):
-            main()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if start_button_rect.collidepoint(event.pos):
+                    main(1, 5, 200, 1)
+                elif continue_button_rect.collidepoint(event.pos):
+                    with open("data.txt", "r") as readData:
+                        if readData is not None:
+                            # Đọc nội dung từ file
+                            content = readData.read()
+                            cleaned_content = content.replace('(', '').replace(')', '').replace(' ', '')
+                            values = cleaned_content.split(',') #cắt dấu ,
+                            level, lives, player_health, player_level = map(int, values)
+                            print(f"Level: {level}")
+                            print(f"Lives: {lives}")
+                            print(f"Player Health: {player_health}")
+                            print(f"Player Level: {player_level}")
+                            main(level, lives, player_health, player_level)
+                            readData.close()
     pygame.quit()
 
 
