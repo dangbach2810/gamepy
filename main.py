@@ -24,6 +24,9 @@ RED_LASER = pygame.image.load(os.path.join("assets", "laser_enemy.png"))
 GREEN_LASER = pygame.image.load(os.path.join("assets", "laser_enemy.png"))
 BLUE_LASER = pygame.image.load(os.path.join("assets", "laser_enemy.png"))
 YELLOW_LASER = pygame.image.load(os.path.join("assets", "laser_red.png"))
+new_width = 30
+new_height = 30
+YELLOW_LASER = pygame.transform.scale(YELLOW_LASER, (new_width, new_height))
 
 # Background
 BG0 = pygame.transform.scale(pygame.image.load(os.path.join("assets", "bg.jpg")), (WIDTH, HEIGHT))
@@ -66,8 +69,10 @@ class Laser:
             self.x += self.speed * self.direction[0]
             self.y += self.speed * self.direction[1]
             self.directionX = self.direction[0]
+            self.directionY = self.direction[1]
             if magnitude <= self.speed:
                 self.target = None
+
         else:
 
             self.y -= self.speed
@@ -172,10 +177,11 @@ class Player(Ship):
 
     def shoot(self, target):
         if self.cool_down_counter == 0:
-            player_center = self.get_center()
-            laser = Laser(player_center[0], player_center[1], self.laser_img, 7)
-            laser.set_target(target)
-            self.lasers.append(laser)
+            for i in range(self.level):
+                player_center = self.get_center()
+                laser = Laser(player_center[0]+i*20, player_center[1], self.laser_img, 7)
+                laser.set_target((target[0]+i*20,target[1]))
+                self.lasers.append(laser)
             self.cool_down_counter = 1
     def get_center(self):
         return self.x+18 + self.ship_img.get_width() // 8, self.y-20 + self.ship_img.get_height() // 8
