@@ -2,6 +2,7 @@ import pygame
 import os
 import time
 import random
+import threading
 
 pygame.font.init()
 
@@ -13,6 +14,10 @@ pygame.display.set_caption("Space Invaders")
 RED_SPACE_SHIP = pygame.image.load(os.path.join("assets", "enemy1.png"))
 GREEN_SPACE_SHIP = pygame.image.load(os.path.join("assets", "enemy2.png"))
 BLUE_SPACE_SHIP = pygame.image.load(os.path.join("assets", "enemy3.png"))
+
+# Item image
+HEAL_ITEM_IMG = pygame.image.load(os.path.join("assets", "heal_item.png"))
+ARMOR_ITEM_IMG = pygame.image.load(os.path.join("assets", "armor_item.png"))
 
 # Player player
 PlayerLevel1 = pygame.image.load(os.path.join("assets", "tank_brown_1.png"))
@@ -91,6 +96,29 @@ class Laser:
 
     def collision(self, obj):
         return collide(self, obj)
+    
+class Item:
+    def __init__(self, x, y, img, effect):
+        self.x = x
+        self.y = y
+        self.img = img
+        self.effect = effect
+        self.speed = 50
+        self.mask = pygame.mask.from_surface(self.img)
+
+        
+    def draw(self, window):
+        window.blit(self.img, (self.x, self.y))
+        
+    def move(self, vel):
+        self.y += vel
+        
+
+    def get_height(self):
+        return self.img.get_height()
+    
+    
+
 
 
 class Ship:
@@ -104,6 +132,8 @@ class Ship:
         self.laser_img = None
         self.lasers = []
         self.cool_down_counter = 0
+        self.armor = 0
+        self.armor_status = 0
 
     def draw(self, window):
         window.blit(self.ship_img, (self.x, self.y))
@@ -117,7 +147,14 @@ class Ship:
             if laser.off_screen(WIDTH, HEIGHT):
                 self.lasers.remove(laser)
             elif laser.collision(obj):
-                obj.health -= 10
+                if obj.armor_status == 1:
+                    obj.armor -= 10
+                    if obj.armor <= 0:
+                        obj.armor_status = 0
+                else:
+                    obj.health -= 10
+                
+                
                 self.lasers.remove(laser)
 
     def cooldown(self):
@@ -148,6 +185,7 @@ class Player(Ship):
         self.mask = pygame.mask.from_surface(self.ship_img)
         self.max_health = health
         self.level = 1
+        
 
     def move_lasers(self, vel, objs):
         self.cooldown()
@@ -236,6 +274,21 @@ def main(level, lives, health, player_level):
     wave_length = 5
     enemy_vel = 1
 
+    items = []
+    item_vel = 3
+    armor = 20
+    def create_item():
+        x = random.randrange(50, WIDTH - 50)
+        y = random.randrange(-1500, -100)
+        img = random.choice([HEAL_ITEM_IMG, ARMOR_ITEM_IMG])
+        if img == HEAL_ITEM_IMG:
+            effect = "heal"
+        else:
+            effect = "armor"
+            
+        item = Item(x, y, img, effect)
+        items.append(item)
+
     player_vel = 5
     laser_vel = 5
 
@@ -253,12 +306,17 @@ def main(level, lives, health, player_level):
         # draw text
         lives_label = main_font.render(f"Lives: {lives}", 1, (255, 255, 255))
         level_label = main_font.render(f"Level: {level}", 1, (255, 255, 255))
+        armor_label = main_font.render(f"Armor: {player.armor}", 1, (255, 255, 255))
 
         WIN.blit(lives_label, (10, 10))
+        WIN.blit(armor_label, (10, 50))
         WIN.blit(level_label, (WIDTH - level_label.get_width() - 10, 10))
 
         for enemy in enemies:
             enemy.draw(WIN)
+            
+        for item in items:
+            item.draw(WIN)
 
         player.draw(WIN)
 
@@ -289,7 +347,12 @@ def main(level, lives, health, player_level):
                     enemy = Enemy(random.randrange(50, WIDTH - 100), random.randrange(-1500, -100),
                                   random.choice(["red", "blue", "green"]))
                     enemies.append(enemy)
-
+                    
+        # Xác suất xuất hiện Item
+        if random.randrange(0, 2 * 300) == 1:
+            create_item()
+                
+                
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 with open("data.txt", "w") as savelevel:
@@ -320,14 +383,43 @@ def main(level, lives, health, player_level):
             if random.randrange(0, 2 * 60) == 1:
                 enemy.shoot()
             if collide(enemy, player):
-                player.health -= 10
+                if player.armor_status == 1:
+                    player.health -= 0
+                    player.armor -= 10
+                    if player.armor <= 0:
+                        player.armor_status = 0
+                else:
+                    player.health -= 10
                 enemies.remove(enemy)
             elif enemy.y + enemy.get_height() > HEIGHT:
                 lives -= 1
                 enemies.remove(enemy)
 
         player.move_lasers(-laser_vel, enemies)
-
+        
+        
+        # Di chuyển, vẽ Item
+        for item in items[:]:
+            item.move(item_vel)
+            item.draw(WIN)
+            
+                
+            if collide(item, player):
+                if item.effect == "heal":
+                    player.health +=20
+                    items.remove(item)
+                    if player.health >= 200:
+                        player.health = 200
+                if item.effect == "armor":
+                    player.armor_status = 1
+                    player.armor = armor
+                    items.remove(item)
+                        
+                        
+                        
+                
+                    
+        
 
 
 def main_menu():
