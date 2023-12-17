@@ -228,7 +228,6 @@ def main(level, lives, health, player_level):
     run = True
     FPS = 60
     level = level -1
-    lives = 5
     main_font = pygame.font.SysFont("comicsans", 50)
     lost_font = pygame.font.SysFont("comicsans", 60)
 
