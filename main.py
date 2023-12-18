@@ -1,8 +1,6 @@
 import pygame
 import os
-import time
 import random
-import threading
 
 pygame.font.init()
 
@@ -116,8 +114,6 @@ class Item:
 
     def get_height(self):
         return self.img.get_height()
-    
-    
 
 
 
