@@ -2,7 +2,11 @@ import pygame
 import os
 import time
 import random
-
+from Enemy import Enemy
+from Laser import Laser
+from Player import Player
+from Ship import Ship
+from Item import Item
 pygame.font.init()
 pygame.mixer.init()
 
@@ -10,28 +14,6 @@ WIDTH, HEIGHT = 600, 650
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Space Invaders")
 
-# Load images Enemy
-Enemy1 = pygame.image.load(os.path.join("assets", "enemy1.png"))
-Enemy2 = pygame.image.load(os.path.join("assets", "enemy2.png"))
-Enemy3 = pygame.image.load(os.path.join("assets", "enemy3.png"))
-
-# Load images Player
-PlayerLv1 = pygame.image.load(os.path.join("assets", "tank_red_1.png"))
-PlayerLv2 = pygame.image.load(os.path.join("assets", "tank_red_2.png"))
-PlayerLv3 = pygame.image.load(os.path.join("assets", "tank_red_3.png"))
-
-# Load images Lasers
-new_width = 30
-new_height = 30
-Laser_E1 = pygame.image.load(os.path.join("assets", "laser_enemy.png"))
-Laser_E2 = pygame.image.load(os.path.join("assets", "laser_enemy.png"))
-Laser_E3 = pygame.image.load(os.path.join("assets", "laser_enemy.png"))
-Laser_Player = pygame.image.load(os.path.join("assets", "laser_red.png"))
-
-Laser_Player = pygame.transform.scale(Laser_Player, (new_width, new_height))
-Laser_E1 = pygame.transform.scale(Laser_E1, (new_width, new_height))
-Laser_E2 = pygame.transform.scale(Laser_E2, (new_width, new_height))
-Laser_E3 = pygame.transform.scale(Laser_E3, (new_width, new_height))
 
 # Item image
 HEAL_ITEM_IMG = pygame.image.load(os.path.join("assets", "heal_item.png"))
@@ -51,228 +33,14 @@ option_button_rect = option_button_img.get_rect(center=(WIDTH / 2, 650))
 
 # Sound
 pygame.mixer.music.load("assets/background.mp3")
-laser_sound = pygame.mixer.Sound("assets/shot.wav")
-explosion_sound = pygame.mixer.Sound("assets/explosion.wav")
 
 
-class Ship:
-    COOLDOWN = 20  # tốc độ ra đạn
 
-    def __init__(self, x, y, health=200):
-        self.x = x
-        self.y = y
-        self.health = health
-        self.ship_img = None
-        self.laser_img = None
-        self.lasers = []
-        self.cool_down_counter = 0
-        self.armor = 0
-        self.armor_status = 0
-
-    def draw(self, window):
-        window.blit(self.ship_img, (self.x, self.y))
-        for laser in self.lasers:
-            laser.draw(window)
-
-    def move_lasers(self, vel, obj):
-        self.cooldown()
-        for laser in self.lasers:
-            laser.movebot(vel)
-            if laser.off_screen(WIDTH, HEIGHT):
-                self.lasers.remove(laser)
-            elif laser.collision(obj):
-                if obj.armor_status == 1:
-                    obj.armor -= 50
-                    if obj.armor <= 0:
-                        obj.armor_status = 0
-                else:
-                    obj.health -= 50
-                self.lasers.remove(laser)
-
-    def cooldown(self):
-        if self.cool_down_counter >= self.COOLDOWN:
-            self.cool_down_counter = 0
-        elif self.cool_down_counter > 0:
-            self.cool_down_counter += 1
-
-    def shoot(self, event):
-        if self.cool_down_counter == 0:
-            laser = Laser(self.x, self.y, self.laser_img, event, 7)
-            self.lasers.append(laser)
-            self.cool_down_counter = 1
-
-    def get_width(self):
-        return self.ship_img.get_width()
-
-    def get_height(self):
-        return self.ship_img.get_height()
-
-
-class Player(Ship):
-    count = 0
-    def __init__(self, x, y, health=200):
-        super().__init__(x, y, health)
-        self.ship_img = PlayerLv1
-        self.laser_img = Laser_Player
-        self.mask = pygame.mask.from_surface(self.ship_img)
-        self.max_health = health
-        self.level = 1
-        self.score = 0
-
-    def move_lasers(self, vel, objs):
-        self.cooldown()
-        for laser in self.lasers:
-
-            laser.move()
-            if laser.off_screen(WIDTH, HEIGHT):
-                self.lasers.remove(laser)
-
-            else:
-
-                for obj in objs[:]:
-                    if laser.collision(obj):
-                        self.score += 10
-                        self.count += 1
-                        if self.count >= 3 and self.level < 3:
-                            if self.health < 200:
-                                self.health += (200 - self.health)*0.8
-                            self.level += 1
-                            self.count = 0
-
-                        objs.remove(obj)
-                        if laser in self.lasers:
-                            self.lasers.remove(laser)
-
-                        explosion_sound.play()
-
-    def draw(self, window):
-        if self.level == 2:
-            self.ship_img = PlayerLv2
-        elif self.level == 3:
-            self.ship_img = PlayerLv3
-        super().draw(window)
-        self.healthbar(window)
-
-    def shoot(self, target):
-        if self.cool_down_counter == 0:
-            for i in range(self.level):
-                player_center = self.get_center()
-                laser = Laser(player_center[0]+i*20, player_center[1], self.laser_img, 7)
-                laser.set_target((target[0]+i*20,target[1]))
-                self.lasers.append(laser)
-                laser_sound.play()
-            self.cool_down_counter = 1
-
-    def get_center(self):
-        return self.x + 10 + self.ship_img.get_width() // 8, self.y-20 + self.ship_img.get_height() // 8
-
-    def healthbar(self, window):
-        pygame.draw.rect(window, (255, 0, 0),
-                         (self.x, self.y + self.ship_img.get_height() + 10, self.ship_img.get_width(), 10))
-        pygame.draw.rect(window, (0, 255, 0), (
-        self.x, self.y + self.ship_img.get_height() + 10, self.ship_img.get_width() * (self.health / self.max_health),
-        10))
-        font = pygame.font.SysFont(None, 28)  # Chọn font và kích thước
-        level_text = font.render(f"{self.level}", True, (255,255,255))  # Tạo đối tượng văn bản
-        window.blit(level_text, (self.x - level_text.get_width(), self.y + self.ship_img.get_height() + 5))
-
-class Enemy(Ship):
-    COLOR_MAP = {
-        "Enemy1": (Enemy1, Laser_E1),
-        "Enemy2": (Enemy2, Laser_E2),
-        "Enemy3": (Enemy3, Laser_E3)
-    }
-
-    def __init__(self, x, y, color, health=100):
-        super().__init__(x, y, health)
-        self.ship_img, self.laser_img = self.COLOR_MAP[color]
-        self.mask = pygame.mask.from_surface(self.ship_img)
-
-    def move(self, vel):
-        self.y += vel
-
-    def shoot(self):
-        if self.cool_down_counter == 0:
-            laser = Laser(self.x + 35, self.y + 45, self.laser_img, 7)
-            self.lasers.append(laser)
-            self.cool_down_counter = 1
-
-class Laser:
-    def __init__(self, x, y, img, speed):
-        self.x = x
-        self.y = y
-        self.img = img
-        self.speed = speed
-        self.target = None
-        self.directionX = 0
-        self.direction = []
-        self.mask = pygame.mask.from_surface(self.img)
-
-    def draw(self, window):
-        window.blit(self.img, (self.x, self.y))
-
-    def set_target(self, target):
-        self.target = target
-
-    def movebot(self, vel):
-        self.y += vel
-
-    def move(self):
-        if self.target is not None:
-            self.direction = [target - pos for pos, target in zip([self.x + 42, self.y + 36], self.target)]
-            magnitude = max(1, sum(d ** 2 for d in self.direction) ** 0.5)
-            self.direction = [d / magnitude for d in self.direction]
-            self.x += self.speed * self.direction[0]
-            self.y += self.speed * self.direction[1]
-            self.directionX = self.direction[0]
-            self.directionY = self.direction[1]
-            if magnitude <= self.speed:
-                self.target = None
-
-        else:
-
-            self.y -= self.speed
-            if self.directionX > 0:
-                self.x += self.speed * self.direction[0]
-            elif self.directionX < 0:
-                self.x -= -(self.speed * self.direction[0])
-        if self.off_screen(WIDTH, HEIGHT) or self.x < 0 or self.x > WIDTH:
-            self.target = None
-    def off_screen(self, width, height):
-        return not (0 <= self.x <= width and 0 <= self.y <= height)
-
-    def is_at_target(self):
-        return self.target is not None and all(
-            abs(pos - target) < self.speed for pos, target in zip([self.x, self.y], self.target))
-
-    def collision(self, obj):
-        return collide(self, obj)
 
 def collide(obj1, obj2):
     offset_x = obj2.x - obj1.x
     offset_y = obj2.y - obj1.y
     return obj1.mask.overlap(obj2.mask, (offset_x, offset_y)) != None
-
-
-class Item:
-    def __init__(self, x, y, img, effect):
-        self.x = x
-        self.y = y
-        self.img = img
-        self.effect = effect
-        self.speed = 50
-        self.mask = pygame.mask.from_surface(self.img)
-
-        
-    def draw(self, window):
-        window.blit(self.img, (self.x, self.y))
-        
-    def move(self, vel):
-        self.y += vel
-
-    def get_height(self):
-        return self.img.get_height()
-    
 
 def main(level, lives, health, player_level):
     score = 0
@@ -486,7 +254,7 @@ def main_menu():
                         # Đọc nội dung từ file
                         content = readData.read()
                         cleaned_content = content.replace('(', '').replace(')', '').replace(' ', '')
-                        values = cleaned_content.split(',') #cắt dấu ,
+                        values = cleaned_content.split(',')
                         level, lives, player_health, player_level = map(int, values)
                         print(f"Level: {level}")
                         print(f"Lives: {lives}")
